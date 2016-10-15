@@ -9,7 +9,13 @@ int manualmode=0;
 using namespace std;
 int state=1;
 int bias=1400;
+struct timeval t1, t2;
 
+int difftimer()
+{
+	gettimeofday(&t2, NULL);
+	return (t2.tv_sec - t1.tv_sec) * 1000 + (t2.tv_usec - t1.tv_usec)/1000;
+}
 VxPid::VxPid() : Vx_t_lock(), Alpha_lock(), Vl_Vr_a_lock(),manualmode_lock() {
 
 	Vr_a=0;
@@ -80,6 +86,7 @@ void VxPid::encoderCallback(const geometry_msgs::Twist::ConstPtr& msg) {
 
 void VxPid::implementPid(int argc, char** argv)
 {
+	gettimeofday(&t1, NULL);
 	
 	time_t start;
   	time(&start);
@@ -114,6 +121,7 @@ std_msgs::Float64 dac_msg;
 std_msgs::Float64 vt_msg;
 
 	while (ros::ok()) {
+		
 		time_t now;		
 		time(&now);
 		Vl_Vr_a_lock.lock();
@@ -150,39 +158,49 @@ std_msgs::Float64 vt_msg;
 			Vx_error_integral = - PWM_max_percent;
 		}
 
-		if(state==1 && difftime(now,start)>0 && difftime(now,start)<20)
+		if(difftimer()>0 && difftimer()<18000)
 		{
-			PWM_Duty_Cycle=1400+difftime(now,start)*15
-			state=2;
+			PWM_Duty_Cycle=1000;
+
 		}
-		else if(state==2 && difftime(now,start)>20 && difftime(now,start)<27)
-		{
-			PWM_Duty_Cycle=1700+200*sin(difftime(now,start)-20);
-			state=3;
+		else if(difftimer()>23000 && difftimer()<25000)
+		{	
+
+			PWM_Duty_Cycle=1900;
+
 		}
-		else if(state==3 && difftime(now,start)>27 && difftime(now,start)<31)
-		{
-			PWM_Duty_Cycle=1750+200*sin(2*difftime(now,start)-27);
-			state=4;
+		else if(difftimer()>25000 && difftimer()<27000)
+		{	
+
+			PWM_Duty_Cycle=1000+(difftimer()-20000)*0.1;
+
 		}
-		else if(state==4 && difftime(now,start)>31 && difftime(now,start)<38)
+		else if(difftimer()>27000 && difftimer()<31000)
 		{
-			PWM_Duty_Cycle=1700+200*sin(3*difftime(now,start)-31);
-			state=5;
+
+			PWM_Duty_Cycle=1700+200*sin(((difftimer()-27000)/4000.0)*6.28318);
+
 		}
-		else if(state==5 && difftime(now,start)>38 && difftime(now,start)<42)
+		else if(difftimer()>31000 && difftimer()<35000)
 		{
-			PWM_Duty_Cycle=1700+200*sin(4*difftime(now,start)-38);
-			state=6;
+			PWM_Duty_Cycle=1700+200*sin(2*((difftimer()-31000)/4000.0)*6.28318);
+
 		}
-		else if(state==6 && difftime(now,start)>42 && difftime(now,start)<45)
+		else if(difftimer()>35000 && difftimer()<39000)
 		{
-			PWM_Duty_Cycle=1700+200*sin(5*difftime(now,start)-42)
-			state=7;
+
+			PWM_Duty_Cycle=1700+200*sin(4*((difftimer()-35000)/4000.0)*6.28318);
+
 		}
-		else if(state==7 && difftime(now,start)>45)
+		else if(difftimer()>39000 && difftimer()<43000)
 		{
-			PWM_Duty_Cycle=1400;
+
+			PWM_Duty_Cycle=1700+200*sin(8*((difftimer()-39000)/4000.0)*6.28318);
+
+		}
+		else if(difftimer()>45)
+		{
+			PWM_Duty_Cycle=1300;
 			state=8;
 		}
 		
